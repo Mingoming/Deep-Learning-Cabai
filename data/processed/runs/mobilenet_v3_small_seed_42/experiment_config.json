@@ -1,0 +1,64 @@
+{
+  "architecture": "MobileNetV3-Small",
+  "pretrained_weights": "IMAGENET1K_V1",
+  "seed": 42,
+  "split_manifest": "E:\\OMING\\Coding\\Python\\Deep-Learning-Cabai\\data\\processed\\split_manifest.csv",
+  "subset_sizes": {
+    "train": 5556,
+    "validation": 1191,
+    "test": 1189
+  },
+  "input_shape": [
+    3,
+    224,
+    224
+  ],
+  "normalization": {
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "batch_size": 32,
+  "baseline_config": {
+    "head_epochs": 3,
+    "head_learning_rate": 0.001,
+    "fine_tune_epochs": 8,
+    "fine_tune_learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "label_smoothing": 0.1,
+    "cosine_eta_min": 1e-06
+  },
+  "augmentation": {
+    "horizontal_flip": 0.5,
+    "rotation_degrees": 15,
+    "brightness": 0.2,
+    "contrast": 0.2
+  },
+  "class_weights": [
+    1.0334821939468384,
+    0.7860780954360962,
+    0.8357400894165039,
+    0.8929604887962341,
+    1.2396252155303955,
+    1.5694915056228638
+  ],
+  "selection_metric": "validation_macro_f1",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "pytorch": "2.10.0+cu128",
+  "torchvision": "0.25.0+cu128",
+  "started_at": "2026-11-15T07:25:14+08:00",
+  "status": "completed",
+  "training_duration_seconds": 2416.56,
+  "best_stage": "fine_tune_all",
+  "best_epoch": 3,
+  "best_validation_macro_f1": 0.9725019931793213,
+  "best_checkpoint": "best_checkpoint.pth"
+}

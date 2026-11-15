@@ -1,0 +1,9 @@
+data
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+docs/superpowers/
+docs/DL-01-DL-02-decisions.md
+docs/Notebook Project_JST_Kelompok 7_Kelas C.ipynb
