@@ -5,7 +5,7 @@
 ![TorchVision](https://img.shields.io/badge/TorchVision-0.25.0-EE4C2C)
 ![Jupyter](https://img.shields.io/badge/Workflow-Jupyter%20Notebook-F37626?logo=jupyter&logoColor=white)
 
-Proyek akademik ini membandingkan MobileNetV3-Small, ResNet-50, dan EfficientNet-B0 untuk mengklasifikasikan citra ke enam kondisi daun cabai. **`Klasifikasi_Daun_Cabai.ipynb` adalah satu-satunya workflow canonical** untuk pemuatan data, pelatihan, evaluasi, visualisasi, dan penyajian hasil.
+Proyek akademik ini membandingkan MobileNetV3-Small, MobileNetV3-Small + CBAM, ResNet-50, dan EfficientNet-B0 untuk mengklasifikasikan citra ke enam kondisi daun cabai. **`Klasifikasi_Daun_Cabai.ipynb` adalah satu-satunya workflow canonical** untuk pemuatan data, pelatihan, evaluasi, visualisasi, dan penyajian hasil.
 
 ## Daftar Isi
 
@@ -37,13 +37,13 @@ Notebook memuat output eksperimen tersimpan. Membuka notebook dan membaca output
   <a href="https://data.mendeley.com/datasets/tm3v4zmh7c/1"><img alt="Buka sumber dataset asli di Mendeley Data" src="https://img.shields.io/badge/Mendeley%20Data-Sumber%20dataset%20asli-2D6AAC?style=for-the-badge"></a>
 </p>
 
-> **Status Google Drive:** unggahan masih berlangsung. Isi folder, kelengkapan file, dan checksum-nya **belum diverifikasi**. Daftar file dan path yang dibutuhkan dicantumkan di bagian [Penempatan dataset dan checkpoint](#penempatan-dataset-dan-checkpoint); jangan menganggap folder Drive sudah lengkap.
+> **Status Google Drive (pemeriksaan langsung ChatGPT):** ZIP dataset dan 18 file eksperimen untuk tiga model dasar tersedia dengan struktur yang sesuai. Checksum ZIP di Drive dan artefak CBAM **belum diverifikasi**. SHA-256 di bawah merujuk pada ZIP lokal yang diaudit; path penempatan file ada di bagian [Penempatan dataset dan checkpoint](#penempatan-dataset-dan-checkpoint).
 
 Sumber dataset asli adalah [Chilli Leaf Disease Image Dataset for Classification and Early Diagnosis in Agriculture](https://data.mendeley.com/datasets/tm3v4zmh7c/1), DOI [10.17632/tm3v4zmh7c.1](https://doi.org/10.17632/tm3v4zmh7c.1), oleh Radoanul Arifen dan S. M. Meriyan Islam. Record Mendeley mencantumkan lisensi [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); berikan atribusi kepada pembuat dataset dan cantumkan perubahan jika dataset diadaptasi.
 
 - Tautan backup eksternal lain: **Belum tersedia; tautan backup belum diberikan.**
 - Arsip lokal yang diaudit: `data/Chilli Leaf Disease Image Dataset for Classificati.zip`.
-- SHA-256 arsip yang dicatat dan dicocokkan dengan file lokal: `7b95cbbf3b725d3fc7f7315438efb374c5ce58e226473975a28e5079f7a08c4d`.
+- SHA-256 arsip ZIP lokal yang dicatat dan dicocokkan dengan file lokal: `7b95cbbf3b725d3fc7f7315438efb374c5ce58e226473975a28e5079f7a08c4d`.
 
 ## Dataset, audit, dan pembagian data
 
@@ -82,16 +82,17 @@ Rancangan eksperimen mengikuti PPT Progress I ketika berbeda dari laporan lama. 
 
 - Transfer learning ImageNet, input RGB 224 x 224, dan normalisasi dari bobot TorchVision.
 - Group-aware split 70:15:15 dengan manifest seed 42, 43, dan 44; eksperimen perbandingan yang tersimpan memakai seed 42.
-- Dua tahap: classifier head 3 epoch pada learning rate 0,001, lalu fine-tuning seluruh model 8 epoch pada learning rate 0,0001.
+- Training dua tahap: 3 epoch tahap awal pada learning rate 0,001, lalu fine-tuning seluruh model selama 8 epoch pada learning rate 0,0001. Untuk MobileNetV3-Small + CBAM, tahap awal melatih CBAM dan classifier sementara feature extractor serta BatchNorm backbone dibekukan; tahap kedua melatih seluruh model.
 - Batch size 32, AdamW, weight decay 0,0001, label smoothing 0,1, dan cosine annealing.
 - Augmentasi hanya pada train: horizontal flip 0,5, rotasi +/-15 derajat, brightness 0,2, contrast 0,2. Class weight dihitung dari train.
 - Macro-F1 validation menjadi metrik utama dan penentu checkpoint terbaik. Test set tidak dipakai dalam hasil di README ini.
 
-| Arsitektur | Bobot pralatih |
-|---|---|
-| MobileNetV3-Small | `IMAGENET1K_V1` |
-| ResNet-50 | `IMAGENET1K_V2` |
-| EfficientNet-B0 | `IMAGENET1K_V1` |
+| Arsitektur | Bobot pralatih | Catatan |
+|---|---|---|
+| MobileNetV3-Small | `IMAGENET1K_V1` | Baseline |
+| MobileNetV3-Small + CBAM | `IMAGENET1K_V1` | Satu CBAM channel lalu spatial setelah `features`, sebelum global average pooling; SE bawaan dipertahankan |
+| ResNet-50 | `IMAGENET1K_V2` | Pembanding |
+| EfficientNet-B0 | `IMAGENET1K_V1` | Pembanding |
 
 ## Hasil eksperimen
 
@@ -100,22 +101,30 @@ Hasil berikut berasal dari artefak seed 42 yang tersimpan. Metrik dihitung pada 
 | Model | Accuracy | Macro-Precision | Macro-Recall | Macro-F1 | Validation loss |
 |---|---:|---:|---:|---:|---:|
 | MobileNetV3-Small | 0,9706 | 0,9724 | 0,9738 | 0,9725 | 0,5534 |
+| MobileNetV3-Small + CBAM | 0,9706 | 0,9725 | 0,9749 | 0,9727 | 0,5431 |
 | ResNet-50 | 0,9790 | 0,9800 | 0,9820 | 0,9804 | 0,5066 |
 | EfficientNet-B0 | 0,9790 | 0,9792 | 0,9814 | 0,9801 | 0,5426 |
 
 | Model | Parameter | Ukuran checkpoint terbaik | Durasi training | Median inferensi per citra |
 |---|---:|---:|---:|---:|
-| MobileNetV3-Small | 1.524.006 | 5,94 MiB | 40,3 menit | 0,198 ms |
-| ResNet-50 | 23.520.326 | 90,02 MiB | 35,9 menit | 1,919 ms |
-| EfficientNet-B0 | 4.015.234 | 15,60 MiB | 32,7 menit | 0,839 ms |
+| MobileNetV3-Small | 1.524.006 | 5,94 MiB | 40,3 menit | 0,189 ms |
+| MobileNetV3-Small + CBAM | 1.565.576 | 6,10 MiB | 46,7 menit | 0,204 ms |
+| ResNet-50 | 23.520.326 | 90,02 MiB | 35,9 menit | 1,861 ms |
+| EfficientNet-B0 | 4.015.234 | 15,60 MiB | 32,7 menit | 0,793 ms |
 
-Training dan timing inferensi dilakukan pada NVIDIA GeForce RTX 4060 Laptop GPU. Timing inferensi menggunakan 5 batch warm-up dan median dari 3 pengulangan, mencakup transfer tensor ke GPU dan forward pass; tidak mencakup pembacaan file atau transformasi citra.
+Training dan timing inferensi dilakukan pada NVIDIA GeForce RTX 4060 Laptop GPU. Keempat model memakai protokol yang sama: 5 putaran warm-up pada 5 batch validasi pertama (hingga 25 forward batch), lalu median dari 3 pass penuh atas tensor validasi yang sudah ditransformasi. Pengukuran mencakup transfer CPU ke GPU, forward pass, dan argmax; tidak mencakup pembacaan file, transformasi citra, pemuatan checkpoint, atau penyalinan prediksi kembali ke CPU. Nilai ms/citra membagi median waktu pass penuh dengan jumlah citra validasi.
 
 **Riwayat training dan grafik aktual:**
 
 ### MobileNetV3-Small
 
 ![Kurva training MobileNetV3-Small](data/processed/runs/mobilenet_v3_small_seed_42/training_curves.png)
+
+### MobileNetV3-Small + CBAM
+
+Checkpoint terbaik dipilih pada fine-tuning epoch 8 (epoch global 11), dengan validation Macro-F1 0,9727. Dibanding baseline, Macro-F1 bertambah 0,0002 (sekitar 0,023 poin persentase), accuracy tetap 0,9706, dan validation loss turun 0,0103. CBAM menambah 41.570 parameter (2,73%), ukuran checkpoint bertambah sekitar 0,16 MiB, median inferensi bertambah 0,015 ms/citra, dan durasi training bertambah 6,5 menit. Selisih satu seed ini kecil dan bersifat deskriptif.
+
+Kurva training CBAM ditampilkan langsung pada output bagian perbandingan di notebook dan tersimpan lokal sebagai `data/processed/runs/mobilenet_v3_small_cbam_seed_42_20261115_152555_521465/training_curves.png`.
 
 ### ResNet-50
 
@@ -148,6 +157,7 @@ Deep-Learning-Cabai/
         |-- split_manifest.csv
         `-- runs/
             |-- mobilenet_v3_small_seed_42/
+            |-- mobilenet_v3_small_cbam_seed_42_20261115_152555_521465/
             |-- resnet50_seed_42_20261115_101121_042498/
             `-- efficientnet_b0_seed_42_20261115_104718_619397/
 ```
@@ -239,10 +249,11 @@ Checkpoint `.pth` dikecualikan dari Git. Setelah file tersedia di Drive, unduh *
 | Model | Path tujuan relatif dari root repository |
 |---|---|
 | MobileNetV3-Small | `data/processed/runs/mobilenet_v3_small_seed_42/best_checkpoint.pth` |
+| MobileNetV3-Small + CBAM | `data/processed/runs/mobilenet_v3_small_cbam_seed_42_20261115_152555_521465/best_checkpoint.pth` |
 | ResNet-50 | `data/processed/runs/resnet50_seed_42_20261115_101121_042498/best_checkpoint.pth` |
 | EfficientNet-B0 | `data/processed/runs/efficientnet_b0_seed_42_20261115_104718_619397/best_checkpoint.pth` |
 
-File `experiment_config.json`, `training_history.json`, dan `training_curves.png` pada folder tersebut sudah disimpan di repository. Untuk evaluasi notebook, yang perlu diunduh dari Drive adalah checkpoint terbaik pada tiga path di atas; checkpoint per tahap tidak dibaca oleh cell evaluasi. Ketiga file bobot harus tersedia agar bagian evaluasi semua model selesai.
+Untuk tiga model DL-04, `experiment_config.json`, `training_history.json`, dan `training_curves.png` sudah tersimpan di repository. Artefak ringan CBAM (`experiment_config.json`, `training_history.json`, dan `training_curves.png`) berada pada folder `data/processed/runs/mobilenet_v3_small_cbam_seed_42_20261115_152555_521465/` dan disertakan dalam checkpoint Git ini. Checkpoint `.pth` tidak disimpan di Git. Tiga model dasar tersedia di Drive; artefak/checkpoint CBAM belum diverifikasi di Drive. Untuk evaluasi semua model pada clone baru, letakkan `best_checkpoint.pth` pada empat path di atas. Checkpoint per tahap tidak dibaca oleh cell evaluasi.
 
 ## Melihat hasil, evaluasi, dan training ulang
 
@@ -252,20 +263,20 @@ Buka notebook dan lihat output yang sudah tersimpan. **Jangan pilih Run All** ji
 
 ### Evaluasi checkpoint tanpa training
 
-Siapkan `.venv`, struktur `data/extracted/`, dan ketiga `best_checkpoint.pth`. Pada notebook, biarkan `JALANKAN_BASELINE = False` dan `JALANKAN_KOMPARASI = False` (nilai awal), pilih kernel `.venv`, lalu pilih **Run All**. Notebook memuat checkpoint dan menghitung metrik hanya pada validation set; langkah ini tidak melatih model dan tidak membuka test set. Pemanggilan model untuk evaluasi memakai bobot checkpoint, bukan mengunduh ulang bobot pralatih ImageNet.
+Siapkan `.venv`, struktur `data/extracted/`, dan empat `best_checkpoint.pth`. Pada notebook, biarkan `JALANKAN_BASELINE = False`, `JALANKAN_KOMPARASI = False`, dan `JALANKAN_CBAM = False` (nilai awal), pilih kernel `.venv`, lalu pilih **Run All**. Notebook memuat checkpoint dan menghitung metrik hanya pada validation set; langkah ini tidak melatih model dan tidak membuka test set. Pemanggilan model untuk evaluasi memakai bobot checkpoint, bukan mengunduh ulang bobot pralatih ImageNet.
 
 ### Training ulang secara eksplisit
 
 Training tidak berjalan pada Run All default.
 
 - Untuk melatih ulang MobileNetV3-Small, ubah `JALANKAN_BASELINE` menjadi `True` pada bagian baseline.
-- Untuk menjalankan komparasi ResNet-50 dan EfficientNet-B0, ubah `JALANKAN_KOMPARASI` menjadi `True` pada bagian komparasi.
+- Untuk menjalankan komparasi ResNet-50 dan EfficientNet-B0, ubah `JALANKAN_KOMPARASI` menjadi `True` pada bagian komparasi. Untuk eksperimen MobileNetV3-Small + CBAM seed 42, ubah `JALANKAN_CBAM` menjadi `True` pada bagian CBAM.
 
 Jalankan notebook dari atas dengan dataset tersedia. Run baru disimpan ke folder bertimestamp agar artefak sebelumnya tidak ditimpa. Setelah selesai, kembalikan flag ke `False` agar Run All berikutnya hanya menampilkan dan mengevaluasi hasil yang tersedia.
 
 ## Kebutuhan komputasi
 
-Notebook memilih CUDA jika `torch.cuda.is_available()` bernilai benar dan menggunakan CPU jika tidak. Hasil eksperimen 11 epoch dijalankan dengan **Python 3.10.2 dan NVIDIA GeForce RTX 4060 Laptop GPU**; tiap model memerlukan sekitar 32,7-40,3 menit.
+Notebook memilih CUDA jika `torch.cuda.is_available()` bernilai benar dan menggunakan CPU jika tidak. Hasil eksperimen 11 epoch dijalankan dengan **Python 3.10.2 dan NVIDIA GeForce RTX 4060 Laptop GPU**; tiap model memerlukan sekitar 32,7-46,7 menit pada run yang tercatat.
 
 - **Pengguna GPU NVIDIA:** `requirements.txt` memasang build PyTorch CUDA 12.8 yang dipakai pada eksperimen. Pastikan driver NVIDIA tersedia dan pemeriksaan di atas menampilkan CUDA aktif serta nama GPU.
 - **Pengguna CPU:** GPU tidak wajib. Jika CUDA tidak tersedia, notebook otomatis memakai CPU. Instalasi tetap mengikuti `requirements.txt` proyek; notebook menyertakan jalur komputasi CPU, tetapi durasi training CPU belum diukur dan dapat jauh lebih lama.
@@ -277,7 +288,7 @@ GPU tidak diperlukan untuk membuka output notebook yang tersimpan. CUDA 12.8 ada
 - ZIP lokal berisi tiga citra lebih banyak daripada angka pada record Mendeley; perbedaan terdapat pada Powdery Mildew. Hasil README mengikuti audit dan manifest arsip lokal yang checksum-nya dicantumkan.
 - Ukuran citra pada ZIP bervariasi. Audit menemukan 1.968 resolusi, tidak seluruh file berukuran 1000 x 1000 seperti metadata publik.
 - Near-duplicate grouping memakai dHash. Dataset tidak menyediakan identitas daun/tanaman, jadi foto berbeda dari objek biologis yang sama masih mungkin tersebar tanpa terdeteksi.
-- Hasil tabel adalah validation seed 42. Kinerja pada test set dan generalisasi ke kondisi lapangan lain belum ditampilkan.
+- Hasil tabel adalah validation seed 42. Perbedaan Macro-F1 antara MobileNetV3-Small dan varian CBAM sangat kecil; hanya satu seed dan satu split yang tersedia, sehingga kestabilan perbedaan belum diketahui. Kinerja pada test set dan generalisasi ke kondisi lapangan lain belum ditampilkan.
 - Hasil tidak membuktikan diagnosis penyebab penyakit atau tingkat keparahan; model hanya mengklasifikasikan label citra pada dataset ini.
 
 ## Troubleshooting
@@ -306,3 +317,4 @@ GPU tidak diperlukan untuk membuka output notebook yang tersimpan. CUDA 12.8 ada
 3. [Rilis Python 3.10.2 untuk Windows](https://www.python.org/downloads/release/python-3102/) dan dokumentasi [venv Python](https://docs.python.org/3/library/venv.html).
 4. Dokumentasi resmi VS Code: [Python environments](https://code.visualstudio.com/docs/python/environments) dan [Jupyter kernel management](https://code.visualstudio.com/docs/datascience/jupyter-kernel-management).
 5. Instalasi versi PyTorch yang digunakan: [Previous PyTorch Versions](https://pytorch.org/get-started/previous-versions/); wheel Windows CUDA 12.8 untuk [PyTorch](https://download.pytorch.org/whl/cu128/torch/) dan [TorchVision](https://download.pytorch.org/whl/cu128/torchvision/).
+6. Woo, S. et al. (2018). *Convolutional Block Attention Module*. ECCV 2018. [arXiv:1807.06521](https://arxiv.org/abs/1807.06521).
